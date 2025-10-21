@@ -108,7 +108,7 @@
 <body>
     <main class="card" role="main">
         <h1>Password Strength Checker</h1>
-        <p class="lead">Interactive password strength meter with suggestions — try entering different characters to see live feedback.</p>
+    
 
         <form action="/check" method="POST" id="pwform" novalidate>
             <div class="form-row">
@@ -118,10 +118,7 @@
 
             <div class="row" aria-hidden="false">
                 <div style="flex:1">
-                    <div class="hint">Strength: <strong id="strengthText">—</strong></div>
-                    <div class="meter" aria-hidden="true">
-                        <div id="meterFill" class="meter-fill"></div>
-                    </div>
+                    
 
                     <div class="checklist" id="checks">
                         <div id="c-length" class="check">8+ chars</div>
@@ -130,7 +127,7 @@
                         <div id="c-lower" class="check">Lowercase</div>
                         <div id="c-special" class="check">Special char</div>
                     </div>
-                </div>
+                
             </div>
         </form>
 
