@@ -1,14 +1,211 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="utf-8" />
     <title>Password Strength Checker</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+        :root{
+            --bg:#f4f7fb;
+            --card:#ffffff;
+            --muted:#6b7280;
+            --accent:#3b82f6;
+            --success:#10b981;
+            --warn:#f59e0b;
+            --danger:#ef4444;
+            --radius:12px;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+        }
+        *{box-sizing:border-box}
+        body{
+            margin:0;
+            background: linear-gradient(180deg, #eef2ff 0%, var(--bg) 100%);
+            color:#0f172a;
+            min-height:100vh;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            padding:24px;
+        }
+        .card{
+            background:var(--card);
+            border-radius:var(--radius);
+            box-shadow: 0 8px 30px rgba(15,23,42,0.08);
+            width:100%;
+            max-width:760px;
+            padding:28px;
+        }
+        h1{margin:0 0 8px 0;font-size:20px}
+        p.lead{margin:0 0 18px 0;color:var(--muted)}
+
+        .form-row{display:flex;gap:12px;align-items:center}
+        .form-row > *{flex:1}
+        input[type="password"]{
+            padding:12px 14px;
+            border-radius:10px;
+            border:1px solid #e6e9ef;
+            font-size:15px;
+            width:100%;
+            outline:none;
+            transition:box-shadow .12s, border-color .12s;
+        }
+        input[type="password"]:focus{box-shadow:0 4px 18px rgba(59,130,246,0.12); border-color: #c7ddff;}
+
+        button{
+            background:var(--accent);
+            color:white;
+            border:none;
+            padding:11px 16px;
+            border-radius:10px;
+            cursor:pointer;
+            font-weight:600;
+            box-shadow: 0 6px 18px rgba(59,130,246,0.14);
+        }
+        small{color:var(--muted)}
+
+        .meter {
+            height:12px;
+            background:#eef2ff;
+            border-radius:10px;
+            overflow:hidden;
+            margin-top:12px;
+        }
+        .meter-fill{
+            height:100%;
+            width:0%;
+            transition:width .2s ease, background .2s ease;
+            background:var(--danger);
+        }
+
+        .checklist{
+            display:flex;
+            gap:8px;
+            margin-top:14px;
+            flex-wrap:wrap;
+        }
+        .check{
+            display:flex;
+            align-items:center;
+            gap:8px;
+            padding:8px 10px;
+            border-radius:8px;
+            background:#f8fafc;
+            border:1px solid #eef2ff;
+            font-size:13px;
+            color:var(--muted);
+        }
+        .check.ok{background:#ecfeff; border-color:#b7f5f0; color:#065f46}
+        .row{display:flex;gap:14px;align-items:center;margin-top:18px}
+        .hint{color:var(--muted); font-size:13px}
+
+        footer{margin-top:18px;text-align:center;color:var(--muted);font-size:13px}
+        @media (max-width:540px){
+            .form-row{flex-direction:column}
+            button{width:100%}
+        }
+    </style>
 </head>
 <body>
-    <h2>Password Strength Checker</h2>
-    <form action="/check" method="POST">
-        <label>Enter Password:</label>
-        <input type="password" name="password" required>
-        <button type="submit">Check Strength</button>
-    </form>
+    <main class="card" role="main">
+        <h1>Password Strength Checker</h1>
+        <p class="lead">Interactive password strength meter with suggestions — try entering different characters to see live feedback.</p>
+
+        <form action="/check" method="POST" id="pwform" novalidate>
+            <div class="form-row">
+                <input id="password" name="password" type="password" placeholder="Enter a password" aria-label="Password" required>
+                <button type="submit">Check Strength</button>
+            </div>
+
+            <div class="row" aria-hidden="false">
+                <div style="flex:1">
+                    <div class="hint">Strength: <strong id="strengthText">—</strong></div>
+                    <div class="meter" aria-hidden="true">
+                        <div id="meterFill" class="meter-fill"></div>
+                    </div>
+
+                    <div class="checklist" id="checks">
+                        <div id="c-length" class="check">8+ chars</div>
+                        <div id="c-number" class="check">Number</div>
+                        <div id="c-upper" class="check">Uppercase</div>
+                        <div id="c-lower" class="check">Lowercase</div>
+                        <div id="c-special" class="check">Special char</div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <footer>Tip: Use a mix of words and symbols and avoid using the same password across services.</footer>
+    </main>
+
+    <script>
+        (function(){
+            const pw = document.getElementById('password');
+            const meter = document.getElementById('meterFill');
+            const text = document.getElementById('strengthText');
+
+            const checks = {
+                length: document.getElementById('c-length'),
+                number: document.getElementById('c-number'),
+                upper: document.getElementById('c-upper'),
+                lower: document.getElementById('c-lower'),
+                special: document.getElementById('c-special')
+            };
+
+            function scorePassword(value){
+                let score = 0;
+                if (value.length >= 8) score++;
+                if (/[0-9]/.test(value)) score++;
+                if (/[A-Z]/.test(value)) score++;
+                if (/[a-z]/.test(value)) score++;
+                if (/[!@#$%^&*()\-_=+\[\]{};:'",.<>?\/|`~\\]/.test(value)) score++;
+                return score;
+            }
+
+            function updateUI(){
+                const v = pw.value;
+                const score = scorePassword(v);
+                // width percent
+                const percent = (score / 5) * 100;
+                meter.style.width = percent + '%';
+
+                // color
+                if (score <= 2) {
+                    meter.style.background = getComputedStyle(document.documentElement).getPropertyValue('--danger') || '#ef4444';
+                    text.textContent = 'Weak';
+                } else if (score <= 4) {
+                    meter.style.background = getComputedStyle(document.documentElement).getPropertyValue('--warn') || '#f59e0b';
+                    text.textContent = 'Medium';
+                } else {
+                    meter.style.background = getComputedStyle(document.documentElement).getPropertyValue('--success') || '#10b981';
+                    text.textContent = 'Strong';
+                }
+
+                // checklist toggles
+                toggleCheck(checks.length, v.length >= 8);
+                toggleCheck(checks.number, /[0-9]/.test(v));
+                toggleCheck(checks.upper, /[A-Z]/.test(v));
+                toggleCheck(checks.lower, /[a-z]/.test(v));
+                toggleCheck(checks.special, /[!@#$%^&*()\-_=+\[\]{};:'",.<>?\/|`~\\]/.test(v));
+            }
+
+            function toggleCheck(el, ok){
+                if (ok) el.classList.add('ok');
+                else el.classList.remove('ok');
+            }
+
+            pw.addEventListener('input', updateUI);
+            // initialize
+            updateUI();
+
+            // optional: prevent empty submit
+            document.getElementById('pwform').addEventListener('submit', function(e){
+                if (!pw.value) {
+                    e.preventDefault();
+                    pw.focus();
+                    alert('Please enter a password to check.');
+                }
+            });
+        })();
+    </script>
 </body>
 </html>
