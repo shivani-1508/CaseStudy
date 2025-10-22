@@ -30,7 +30,7 @@ pipeline{
         stage('Restart Deployment') {
             steps {
                 echo "Restarting Deployment to pick up new image..."
-                bat "kubectl rollout restart deployment/journal-deployment"
+                bat "kubectl rollout restart deployment/kubeapp-deployment"
             }
         }
     }
